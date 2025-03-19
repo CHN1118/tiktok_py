@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='logo.svg') }}"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TikTok Automation</title>
+  </head>
+  <body>
+    <div class="title_box">
+      <div class="title_box_page">
+        当前页面:<span id="title_box_page"></span>
+      </div>
+      <button class="btn_box" onclick="performAction()">获取TikTok操作</button>
+      <button class="btn_box" onclick="fetchFn('/restart')">重启TikTok</button>
+      <button class="btn_box" onclick="judgmentPage('/judgment_page')">
+        判断当前页面
+      </button>
+      <button class="btn_box" onclick="fetchFn('/back_swipe')">退出</button>
+    </div>
+    <div class="search_input">
+      输入框:<input id="search_input" type="text" />
+      <div onclick="seaInput()" class="btn_box">搜索</div>
+    </div>
+    <div id="option_body_tiktok" class="option_body"></div>
+    <script>
+      function performAction() {
+        fetch('/tiktok')
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok')
+            }
+            return response.json() // 解析为 JSON
+          }) // 解析 JSON 数据
+          .then(data => {
+            console.log('data:', data)
+            const tk_body = document.getElementById('option_body_tiktok')
+            let li_html = ''
+            data.routes.forEach(item => {
+              li_html +=
+                '<li onclick=' +
+                'fetchFn("' +
+                `${item}` +
+                '")' +
+                '>' +
+                item.split('tiktok/')[1] +
+                '</li>'
+            })
+            tk_body.innerHTML = '<ul>' + li_html + '</ul>'
+          }) // 打印实际数据
+          .catch(error => console.error('Error:', error)) // 处理请求错误
+      }
+      function fetchFn(url) {
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok')
+            }
+            return response.json() // 解析为 JSON
+          }) // 解析 JSON 数据
+          .then(data => {
+            console.log('data:', data)
+          }) // 打印实际数据
+          .catch(error => console.error('Error:', error)) // 处理请求错误
+      }
+      function judgmentPage(url) {
+        fetch(url)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok')
+            }
+            return response.json() // 解析为 JSON
+          }) // 解析 JSON 数据
+          .then(data => {
+            document.getElementById('title_box_page').innerHTML = data.message
+            console.log('data:', data)
+          }) // 打印实际数据
+          .catch(error => console.error('Error:', error)) // 处理请求错误
+      }
+      function seaInput() {
+        search_input = document.getElementById('search_input')
+        fetch('/search_inptup', {
+          method: 'POST', // 使用 POST 方式
+          headers: {
+            'Content-Type': 'application/json' // 发送 JSON 数据
+          },
+          body: JSON.stringify({ keyword: search_input.value }) // 发送关键词
+        })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok')
+            }
+            return response.json() // 解析为 JSON
+          }) // 解析 JSON 数据
+          .then(data => {
+            console.log('data:', data)
+          }) // 打印实际数据
+          .catch(error => console.error('Error:', error)) // 处理请求错误
+      }
+    </script>
+  </body>
+  <style>
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+      background: #272b33;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+    .title_box {
+      display: flex;
+      gap: 10px;
+    }
+    .title_box_page {
+      color: #fff;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+    }
+    .btn_box {
+      cursor: pointer;
+      border: none;
+      background: #50545f;
+      padding: 10px 20px;
+      color: #fff;
+      font-weight: 500;
+      border-radius: 20px;
+    }
+    .btn_box:hover {
+      background: #000104;
+    }
+    .btn_box:active {
+      transform: scale(0.95); /* 轻微缩小，模拟按钮按压效果 */
+    }
+
+    .option_body {
+      margin-top: 20px;
+      width: 100%;
+    }
+
+    .option_body ul {
+      list-style: none; /* 移除默认的列表样式 */
+      padding: 25px;
+      margin: 0;
+      border: 1px solid #51545e;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .option_body li {
+      display: block;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      color: #fff;
+      padding: 5px 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: 1px solid transparent;
+      background: #242424;
+      transition: background 0.2s ease-in-out;
+    }
+
+    .search_input {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 0 0;
+      color: white;
+      font-weight: 800;
+    }
+
+    .search_input input {
+      background: transparent;
+      border: 1px solid #51545e;
+      width: 300px;
+      height: 30px;
+      color: white;
+    }
+
+    .search_input input:focus {
+      border: 1px solid #467b7e !important;
+      outline: none;
+    }
+
+    /* 悬停时的样式 */
+    .option_body li:hover {
+      border: 1px solid #467b7e;
+    }
+
+    /* 按下时的样式 */
+    .option_body li:active {
+      transform: scale(0.95); /* 轻微缩小，模拟按钮按压效果 */
+    }
+  </style>
+</html>
