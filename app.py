@@ -41,8 +41,8 @@ def judgment_page():
     s,m = tiktok_bot.judgment_page()
     return jsonify({"message": m, "status": "success"})
 
-@app.route("/search_inptup", methods=["POST"])
-def search_inptup():
+@app.route("/search_input", methods=["POST"])
+def search_input():
     """在搜索页面时,搜索关键字"""
     data = request.json  # 获取 POST 请求的 JSON 数据
     keyword = data.get("keyword") if data else None
@@ -50,7 +50,7 @@ def search_inptup():
         logger.warning("缺少 keyword 参数")
         return jsonify({"message": "缺少 keyword 参数", "status": "failure"})
 
-    s, m = tiktok_bot.search_inptup(keyword)  # 传入 keyword
+    s, m = tiktok_bot.search_input(keyword)  # 传入 keyword
     return jsonify({"message": m, "status": "success"})
 
 if __name__ == '__main__':

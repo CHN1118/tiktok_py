@@ -82,8 +82,8 @@
           .catch(error => console.error('Error:', error)) // 处理请求错误
       }
       function seaInput() {
-        search_input = document.getElementById('search_input')
-        fetch('/search_inptup', {
+          var search_input = document.getElementById('search_input')
+        fetch('/search_input', {
           method: 'POST', // 使用 POST 方式
           headers: {
             'Content-Type': 'application/json' // 发送 JSON 数据

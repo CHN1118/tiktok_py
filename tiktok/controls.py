@@ -26,11 +26,11 @@ class TikTokAutomation:
         """
         try:
             if description:
-                button = self.d(className=class_name, index = index if index != None else None , description=description)
+                button = self.d(className=class_name, index = index , description=description)
             elif descriptionMatches:
-                button = self.d(className=class_name, index = index if index != None else None , descriptionMatches=descriptionMatches)
+                button = self.d(className=class_name, index = index , descriptionMatches=descriptionMatches)
             elif text:
-                button = self.d(className=class_name, index = index if index != None else None , text=text)
+                button = self.d(className=class_name, index = index , text=text)
             else:
                 raise ValueError("必须提供description或description_matches")
             
@@ -199,7 +199,7 @@ class TikTokAutomation:
 
     def follow_user(self):
         """关注用户"""
-        return self._click_button("android.widget.Button", descriptionMatches="^关注 .*")
+        return self._click_button("android.widget.Button", descriptionMatches="^关注 .*",index=1)
 
     def favorite_video(self):
         """收藏视频"""
@@ -213,7 +213,6 @@ class TikTokAutomation:
         """观看视频时——点击头像进入博主主页"""
         return self._click_button("android.widget.ImageView", descriptionMatches="^.*主页")
 
-    #* 博主页面关注
     def blogger_fallow(self):
         """博主页面关注"""
         return self._click_button("android.widget.TextView", text="关注",index=0)
@@ -222,11 +221,11 @@ class TikTokAutomation:
     def blogger_first_video(self):
         """博主第一个视频"""
         try:
-            like_button = self.d(className="android.widget.GridView").child(className="android.widget.FrameLayout")
-            if like_button.exists:
-                like_button.click()
-                logger.success("已打开")
-                return True, "已打开"
+            button = self.d(className="android.widget.GridView").child(className="android.widget.FrameLayout")
+            if button.exists:
+                button.click()
+                logger.success("已打开博主第一个视频")
+                return True, "已打开博主第一个视频"
             else:
                 logger.success("未找到")
                 return False, "未找到"
@@ -238,17 +237,19 @@ class TikTokAutomation:
     def search_video(self):
         """主页右上角的搜索"""
         try:
-            like_button = self.d(className="android.widget.GridView").child(className="android.widget.FrameLayout")
-            if like_button.exists:
-                like_button.click()
-                logger.success("已打开")
-                return True, "已打开"
+            button = self.d(className="android.widget.LinearLayout",description="推荐")
+            if button.exists:
+                w,h = self.d.window_size()
+                print(f"{w,h,self.status_bar_h}")
+                self.d.click(w - 20,self.status_bar_h + 20)
+                logger.success("进入搜索页面")
+                return True, "进入搜索页面"
             else:
-                logger.success("未找到")
-                return False, "未找到"
+                logger.success("未找到按钮")
+                return False, "未找到按钮"
         except Exception as e:
-            logger.warning(f"打开失败: {e}")
-            return False, f"打开失败: {e}"
+            logger.warning(f"进入失败: {e}")
+            return False, f"进入失败: {e}"
         
     #* 主页点击右上角的搜索
     def search_inptup(self, keyword: str = ""):
