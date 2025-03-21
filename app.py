@@ -60,5 +60,16 @@ def search_input():
     return jsonify({"message": m, "status": "success"})
 
 
+@app.route("/wake_up", methods=["POST"])
+def wake_up():
+    keyword = request.form.get("keyword")
+    s, m = tiktok_bot.wake_up(keyword)
+    return jsonify({"message": m, "status": "success"})
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8080)
+
+
+# pip freeze > requirements.txt 生成依赖包
+# pip install -r requirements.txt 安装依赖包

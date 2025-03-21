@@ -341,3 +341,19 @@ class TikTokAutomation:
         except Exception as e:
             logger.warning(f"进入失败: {e}")
             return False, f"进入失败: {e}"
+
+    # * 唤醒手机
+    def wake_up(self, keyword):
+        """唤醒手机"""
+        try:
+            if not self.d.info.get("screenOn"):
+                self.d.screen_on()
+                self.d.swipe(500, 1500, 500, 500)
+                logger.success("唤醒手机")
+                return True, "唤醒手机"
+            else:
+                logger.success("当前已活跃状态")
+                return False, "当前已活跃状态"
+        except Exception as e:
+            logger.warning(f"唤醒失败: {e}")
+            return False, f"唤醒失败: {e}"

@@ -11,15 +11,17 @@
     <title>TikTok Automation</title>
 </head>
 <body>
+
 <div class="title_box">
     <div class="title_box_page">
-        当前页面:<span id="title_box_page"></span>
+        当前页面:<span id="title_box_page">???</span>
     </div>
-    <button class="btn_box" onclick="performAction()">获取TikTok操作</button>
-    <button class="btn_box" onclick="fetchFn('/restart')">重启TikTok</button>
     <button class="btn_box" onclick="judgmentPage('/judgment_page')">
         判断当前页面
     </button>
+    <button class="btn_box" onclick="wakeUp()">唤醒手机</button>
+    <button class="btn_box" onclick="performAction()">获取TikTok操作</button>
+    <button class="btn_box" onclick="fetchFn('/restart')">重启TikTok</button>
     <button class="btn_box" onclick="fetchFn('/back_swipe')">退出</button>
 </div>
 <div class="search_input">
@@ -27,6 +29,7 @@
     <div onclick="seaInput()" class="btn_box">搜索</div>
 </div>
 <div id="option_body_tiktok" class="option_body"></div>
+
 <script>
     function performAction() {
         fetch('/tiktok')
@@ -37,17 +40,17 @@
                 return response.json() // 解析为 JSON
             }) // 解析 JSON 数据
             .then(data => {
-                console.log('data:', data)
+                console.log(data)
                 const tk_body = document.getElementById('option_body_tiktok')
                 let li_html = ''
                 data.routes.forEach(item => {
                     li_html +=
                         '<li onclick=' +
                         'fetchFn("' +
-                        `${item}` +
+                        `${item.path}` +
                         '")' +
                         '>' +
-                        item.split('tiktok/')[1] +
+                        item.description +
                         '</li>'
                 })
                 tk_body.innerHTML = '<ul>' + li_html + '</ul>'
@@ -64,7 +67,7 @@
                 return response.json() // 解析为 JSON
             }) // 解析 JSON 数据
             .then(data => {
-                console.log('data:', data)
+                console.log(data)
             }) // 打印实际数据
             .catch(error => console.error('Error:', error)) // 处理请求错误
     }
@@ -79,7 +82,7 @@
             }) // 解析 JSON 数据
             .then(data => {
                 document.getElementById('title_box_page').innerHTML = data.message
-                console.log('data:', data)
+                console.log(data)
             }) // 打印实际数据
             .catch(error => console.error('Error:', error)) // 处理请求错误
     }
@@ -100,12 +103,34 @@
                 return response.json() // 解析为 JSON
             }) // 解析 JSON 数据
             .then(data => {
-                console.log('data:', data)
+                console.log(data)
+            }) // 打印实际数据
+            .catch(error => console.error('Error:', error)) // 处理请求错误
+    }
+
+    function wakeUp() {
+        fetch('/wake_up', {
+            method: 'POST', // 使用 POST 方式
+            headers: {
+                'Content-Type': 'application/json' // 发送 JSON 数据
+            },
+            body: JSON.stringify({keyword: ''}) // 发送关键词
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok')
+                }
+                return response.json() // 解析为 JSON
+            }) // 解析 JSON 数据
+            .then(data => {
+                console.log(data)
             }) // 打印实际数据
             .catch(error => console.error('Error:', error)) // 处理请求错误
     }
 </script>
+
 </body>
+
 <style>
     html,
     body {
@@ -213,4 +238,5 @@
         transform: scale(0.95); /* 轻微缩小，模拟按钮按压效果 */
     }
 </style>
+
 </html>
