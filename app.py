@@ -11,6 +11,12 @@ devices_id = "QKYPIZA6R8IJ7TLV"
 # 连接到安卓设备
 d = u2.connect(devices_id)  # 默认连接到第一个设备，如果有多个设备可以指定设备ID
 
+# 设置每次单击UI后再次单击之间延迟1.5秒
+d.click_post_delay = 1.5  # 默认无延迟
+
+# 设置默认元素等待超时（秒）
+d.wait_timeout = 10.0  # 默认20.0秒
+
 tiktok_bot = tiktok(app, d)
 
 
@@ -29,7 +35,10 @@ def tiktok_main():
 @app.route("/back_swipe")
 def back_swipe():
     """模拟系统退出"""
-    tiktok_bot.back_swipe()
+    # e = d.xpath("//android.widget.TextView[@text='关注']").all()
+    # print(f"{e[1].info}")
+    # tiktok_bot.click_element("like_video", "android.widget.ImageView", description="赞")
+    d.press("BACK")  # 按下back键的常规方式
     return jsonify({"message": "模拟系统退出", "status": "success"})
 
 

@@ -2,6 +2,8 @@ from loguru import logger
 import uiautomator2 as u2
 from airtest.core.api import *
 import time
+import json
+import os
 
 
 class TikTokAutomation:
@@ -16,6 +18,101 @@ class TikTokAutomation:
         self.status_bar_h = device(
             resourceId="com.android.systemui:id/status_bar"
         ).info["bounds"]["bottom"]
+        self.cache_file = ".cache/resource_id_cache.json"
+        self.resource_id_cache = self._load_cache()
+
+    def _load_cache(self):
+        """加载本地缓存文件"""
+        if os.path.exists(self.cache_file):
+            with open(self.cache_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return {}
+
+    def _save_cache(self):
+        """保存缓存到本地"""
+        with open(self.cache_file, "w", encoding="utf-8") as f:
+            json.dump(self.resource_id_cache, f, indent=4)
+
+    def _update_cache(self, key, resource_id):
+        """更新缓存"""
+        self.resource_id_cache[key] = resource_id
+        self._save_cache()
+
+    def find_element(
+        self, key, class_name: str = None, xpath: str = None, all: int = None, **kwargs
+    ):
+        """
+        查找 UI 元素，优先使用缓存的 resourceId，失败后回退到 className + 其他参数匹配
+        :param all:
+        :param xpath:
+        :param key: 元素的唯一标识符（比如 'like_button'）
+        :param class_name: 元素 class
+        :param kwargs: 其他查询条件，比如 text、description、descriptionMatches 等
+        """
+        # 如果元素已经存在于缓存中，直接使用缓存的 resourceId
+        if key in self.resource_id_cache:
+            # 1. 尝试用 resourceId 查询
+            resource_id = self.resource_id_cache[key]
+            element = self.d(resourceId=resource_id)
+            if element.exists:
+                logger.success(f"找到 {key} 元素，使用缓存")
+                return element
+
+        # 1. 确保至少有一个有效的查询条件并且 xpath 为空
+        if not kwargs and xpath is None:
+            logger.warning("未提供查询条件")
+            return None
+
+        element = None
+
+        if xpath:
+            if all:
+                element = self.d.xpath(xpath).all()[all]
+            else:
+                element = self.d.xpath(xpath)
+        else:
+            kwargs["className"] = class_name
+            element = self.d(**kwargs)
+        # 3. 如果成功查询，记录新的 resourceId
+        if element and element:
+            new_resource_id = element.info.get("resourceName")
+            if new_resource_id:
+                logger.success(f"更新 {key} 元素的 resourceId 为 {new_resource_id}")
+                self._update_cache(key, new_resource_id)
+
+        return element
+
+    def click_element(
+        self,
+        key: str,
+        class_name: str = None,
+        xpath: str = None,
+        all: int = None,
+        **kwargs,
+    ):
+        """点击元素"""
+        try:
+            element = self.find_element(key, class_name, xpath, all, **kwargs)
+            print(element.info)
+            if element.click_exists(timeout=0.1):
+                logger.success(
+                    f"成功点击 {kwargs.get('description') or kwargs.get('descriptionMatches') or kwargs.get('text')} 按钮"
+                )
+                return (
+                    True,
+                    f"点击 {kwargs.get('description') or kwargs.get('descriptionMatches') or kwargs.get('text')} 按钮成功",
+                )
+            else:
+                logger.warning(
+                    f"未找到 {kwargs.get('description') or kwargs.get('descriptionMatches') or kwargs.get('text')} 按钮"
+                )
+                return (
+                    False,
+                    f"未找到 {kwargs.get('description') or kwargs.get('descriptionMatches') or kwargs.get('text')} 按钮",
+                )
+        except Exception as e:
+            logger.warning(f"按钮点击失败: {e}")
+            return False, f"按钮点击失败: {e}"
 
     # * 抽离公共方法
     def _click_button(
@@ -27,13 +124,10 @@ class TikTokAutomation:
         index: int = None,
     ):
         """
-        通用按钮点击方法
-        :param class_name: 按钮的 class 名称
-        :param description: 精确匹配按钮描述
-        :param description_matches: 正则匹配按钮描述
-        :return: 操作结果（成功/失败）和相应的提示信息
+        优化通用按钮点击方法，加快点击速度
         """
         try:
+            button = None
             if description:
                 button = self.d(
                     className=class_name, index=index, description=description
@@ -47,19 +141,23 @@ class TikTokAutomation:
             elif text:
                 button = self.d(className=class_name, index=index, text=text)
             else:
-                raise ValueError("必须提供description或description_matches")
+                raise ValueError("必须提供 description、descriptionMatches 或 text")
 
-            if button.exists:
-                button.click()
+            # 直接使用 click_exists，减少等待
+            if button.click_exists(timeout=0.1):
                 logger.success(
                     f"成功点击 {description or descriptionMatches or text} 按钮"
                 )
-                return True, f"点击{description or descriptionMatches or text}按钮成功"
+                return (
+                    True,
+                    f"点击 {description or descriptionMatches or text} 按钮成功",
+                )
             else:
-                logger.success(
+                logger.warning(
                     f"未找到 {description or descriptionMatches or text} 按钮"
                 )
-                return False, f"未找到{description or descriptionMatches or text}按钮"
+                return False, f"未找到 {description or descriptionMatches or text} 按钮"
+
         except Exception as e:
             logger.warning(f"按钮点击失败: {e}")
             return False, f"按钮点击失败: {e}"
@@ -87,35 +185,13 @@ class TikTokAutomation:
         """获取屏幕大小"""
         return self.d.window_size()
 
-    # 使用从屏幕中间最左侧滑动到屏幕中心的操作模拟退出
-    def back_swipe(self):
-        """从屏幕中间最左侧滑动到屏幕中心"""
-        try:
-            # 获取屏幕分辨率
-            width, height = self.d.window_size()
-
-            # 计算起点和终点坐标
-            start_x = 0  # 屏幕最左侧
-            start_y = height // 2  # 屏幕垂直方向的中间
-            end_x = width // 2  # 屏幕水平方向的中间
-            end_y = height // 2  # 仍然在中间高度
-
-            # 执行滑动
-            self.d.swipe(start_x, start_y, end_x, end_y, duration=0.2)  # 0.2秒快速滑动
-
-            logger.success("已执行退出滑动")
-            return True, "已执行退出滑动"
-
-        except Exception as e:
-            logger.warning(f"退出滑动失败: {e}")
-            return False, f"退出滑动失败: {e}"
-
     # 上滑
     def swipe_up(self):
         """向上滑动，切换下一个视频"""
         try:
             width, height = self.get_screen_size()
             self.d.swipe(width // 2, height * 3 // 4, width // 2, height // 4, 0.01)
+            # self.d.press("up")
             logger.success("上滑视频")
             return True, "成功滑动到下一个视频"
         except Exception as e:
@@ -232,18 +308,25 @@ class TikTokAutomation:
     # *  视频页面操作
     def like_video(self):
         """点赞视频"""
-        return self._click_button("android.widget.ImageView", description="赞")
+        return self.click_element(
+            "like_video", "android.widget.ImageView", description="赞"
+        )
 
     def follow_user(self):
         """关注用户"""
-        return self._click_button(
-            "android.widget.Button", descriptionMatches="^关注 .*", index=1
+        title = self.d(resourceId="com.zhiliaoapp.musically:id/title").get_text()
+        return self.click_element(
+            "follow_user",
+            "android.widget.Button",
+            description=f"关注 {title}",
         )
 
     def favorite_video(self):
         """收藏视频"""
-        return self._click_button(
-            "android.widget.Button", description="将此视频添加到或移出收藏。"
+        return self.click_element(
+            "favorite_video",
+            "android.widget.Button",
+            description="将此视频添加到或移出收藏。",
         )
 
     def share_video(self):
@@ -254,13 +337,18 @@ class TikTokAutomation:
 
     def blogger_home(self):
         """观看视频时——点击头像进入博主主页"""
-        return self._click_button(
-            "android.widget.ImageView", descriptionMatches="^.*主页"
+        return self.click_element(
+            "blogger_home", "android.widget.ImageView", descriptionMatches="^.*主页"
         )
 
     def blogger_fallow(self):
         """博主页面关注"""
-        return self._click_button("android.widget.TextView", text="关注", index=0)
+        return self.click_element(
+            "blogger_fallow",
+            xpath="//android.widget.TextView[@text='关注']",
+            all=1,
+            descriptionMatches="主页关注",
+        )
 
     # * 博主页面第一个视频
     def blogger_first_video(self):
